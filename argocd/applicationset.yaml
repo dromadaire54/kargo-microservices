@@ -17,13 +17,13 @@ spec:
 
   template:
     metadata:
-      name: online-boutique-{{.name}}
+      name: online-boutique-{{ `{{.name}}` }}
       labels:
         app.kubernetes.io/name: online-boutique
-        app.kubernetes.io/instance: "{{.name}}"
-        kargo.akuity.io/stage: "kargo-microservices:{{.stage}}"
+        app.kubernetes.io/instance: "{{ `{{.name}}` }}"
+        kargo.akuity.io/stage: "kargo-microservices:{{ `{{.stage}}` }}"
       annotations:
-        kargo.akuity.io/authorized-stage: "kargo-microservices:{{.stage}}"
+        kargo.akuity.io/authorized-stage: "kargo-microservices:{{ `{{.stage}}` }}"
 
     spec:
       project: default
@@ -34,12 +34,12 @@ spec:
         path: charts/online-boutique
         helm:
           releaseName: online-boutique
-          valuesFiles:
-          - ../../env/{{.name}}/values.yaml
+          valueFiles:
+            - ../../env/{{ `{{.name}}`}}/values.yaml
 
       destination:
         server: https://kubernetes.default.svc
-        namespace: online-boutique-{{.name}}
+        namespace: online-boutique-{{ `{{.name}}` }}
 
       syncPolicy:
         automated:
