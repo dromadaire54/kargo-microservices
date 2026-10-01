@@ -20,8 +20,10 @@ spec:
       name: online-boutique-{{.name}}
       labels:
         app.kubernetes.io/name: online-boutique
-        app.kubernetes.io/instance: {{.name}}
-        kargo.akuity.io/stage: kargo-microservices:{{.stage}}
+        app.kubernetes.io/instance: "{{.name}}"
+        kargo.akuity.io/stage: "kargo-microservices:{{.stage}}"
+      annotations:
+        kargo.akuity.io/authorized-stage: "kargo-microservices:{{.stage}}"
 
     spec:
       project: default
@@ -52,8 +54,3 @@ spec:
             duration: 5s
             factor: 2
             maxDuration: 3m
-
-      # Kargo integration - authorize stage promotion
-      metadata:
-        annotations:
-          kargo.akuity.io/authorized-stage: kargo-microservices:{{.stage}}
