@@ -1,0 +1,15 @@
+image:
+  repository: us-central1-docker.pkg.dev/google-samples/microservices-demo
+  # One tag per microservice. Kargo updates these keys in env/<stage>/values.yaml.
+  tags:
+    adservice: v0.10.2
+    cartservice: v0.10.2
+    checkoutservice: v0.10.2
+    currencyservice: v0.10.2
+    emailservice: v0.10.2
+    frontend: v0.10.2
+    loadgenerator: v0.10.2
+    paymentservice: v0.10.2
+    productcatalogservice: v0.10.2
+    recommendationservice: v0.10.2
+    shippingservice: v0.10.2

@@ -1,0 +1,131 @@
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Stage
+metadata:
+  name: dev
+  namespace: kargo-microservices
+  annotations:
+    kargo.akuity.io/color: green
+spec:
+  requestedFreight:
+  - origin:
+      kind: Warehouse
+      name: online-boutique
+    sources:
+      direct: true
+  promotionTemplate:
+    spec:
+      vars:
+      - name: imageRepo
+        value: us-central1-docker.pkg.dev/google-samples/microservices-demo
+      steps:
+      - uses: git-clone
+        config:
+          repoURL: https://github.com/jessesuen/kargo-microservices.git
+          checkout:
+          - branch: main
+            path: ./src
+
+      - uses: yaml-update
+        as: update-image
+        config:
+          path: ./src/env/dev/values.yaml
+          updates:
+          - key: image.tags.adservice
+            value: ${{ imageFrom(vars.imageRepo + "/adservice").Tag }}
+          - key: image.tags.cartservice
+            value: ${{ imageFrom(vars.imageRepo + "/cartservice").Tag }}
+          - key: image.tags.checkoutservice
+            value: ${{ imageFrom(vars.imageRepo + "/checkoutservice").Tag }}
+          - key: image.tags.currencyservice
+            value: ${{ imageFrom(vars.imageRepo + "/currencyservice").Tag }}
+          - key: image.tags.emailservice
+            value: ${{ imageFrom(vars.imageRepo + "/emailservice").Tag }}
+          - key: image.tags.frontend
+            value: ${{ imageFrom(vars.imageRepo + "/frontend").Tag }}
+          - key: image.tags.loadgenerator
+            value: ${{ imageFrom(vars.imageRepo + "/loadgenerator").Tag }}
+          - key: image.tags.paymentservice
+            value: ${{ imageFrom(vars.imageRepo + "/paymentservice").Tag }}
+          - key: image.tags.productcatalogservice
+            value: ${{ imageFrom(vars.imageRepo + "/productcatalogservice").Tag }}
+          - key: image.tags.recommendationservice
+            value: ${{ imageFrom(vars.imageRepo + "/recommendationservice").Tag }}
+          - key: image.tags.shippingservice
+            value: ${{ imageFrom(vars.imageRepo + "/shippingservice").Tag }}
+
+      - uses: git-commit
+        as: commit
+        config:
+          path: ./src
+          message: ${{ outputs['update-image'].commitMessage }}
+
+      - uses: git-push
+        config:
+          path: ./src
+
+---
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Stage
+metadata:
+  name: prod
+  namespace: kargo-microservices
+  annotations:
+    kargo.akuity.io/color: red
+spec:
+  requestedFreight:
+  - origin:
+      kind: Warehouse
+      name: online-boutique
+    sources:
+      stages:
+      - dev
+  promotionTemplate:
+    spec:
+      vars:
+      - name: imageRepo
+        value: us-central1-docker.pkg.dev/google-samples/microservices-demo
+      steps:
+      - uses: git-clone
+        config:
+          repoURL: https://github.com/jessesuen/kargo-microservices.git
+          checkout:
+          - branch: main
+            path: ./src
+
+      - uses: yaml-update
+        as: update-image
+        config:
+          path: ./src/env/prod/values.yaml
+          updates:
+          - key: image.tags.adservice
+            value: ${{ imageFrom(vars.imageRepo + "/adservice").Tag }}
+          - key: image.tags.cartservice
+            value: ${{ imageFrom(vars.imageRepo + "/cartservice").Tag }}
+          - key: image.tags.checkoutservice
+            value: ${{ imageFrom(vars.imageRepo + "/checkoutservice").Tag }}
+          - key: image.tags.currencyservice
+            value: ${{ imageFrom(vars.imageRepo + "/currencyservice").Tag }}
+          - key: image.tags.emailservice
+            value: ${{ imageFrom(vars.imageRepo + "/emailservice").Tag }}
+          - key: image.tags.frontend
+            value: ${{ imageFrom(vars.imageRepo + "/frontend").Tag }}
+          - key: image.tags.loadgenerator
+            value: ${{ imageFrom(vars.imageRepo + "/loadgenerator").Tag }}
+          - key: image.tags.paymentservice
+            value: ${{ imageFrom(vars.imageRepo + "/paymentservice").Tag }}
+          - key: image.tags.productcatalogservice
+            value: ${{ imageFrom(vars.imageRepo + "/productcatalogservice").Tag }}
+          - key: image.tags.recommendationservice
+            value: ${{ imageFrom(vars.imageRepo + "/recommendationservice").Tag }}
+          - key: image.tags.shippingservice
+            value: ${{ imageFrom(vars.imageRepo + "/shippingservice").Tag }}
+
+      - uses: git-commit
+        as: commit
+        config:
+          path: ./src
+          message: ${{ outputs['update-image'].commitMessage }}
+
+      - uses: git-push
+        config:
+          path: ./src
