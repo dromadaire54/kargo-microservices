@@ -1,0 +1,59 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: online-boutique
+  namespace: argocd
+spec:
+  # Generator for dev and prod environments
+  generators:
+  - list:
+      elements:
+      - name: dev
+        namespace: online-boutique-dev
+        stage: dev
+      - name: prod
+        namespace: online-boutique-prod
+        stage: prod
+
+  template:
+    metadata:
+      name: online-boutique-{{name}}
+      labels:
+        app.kubernetes.io/name: online-boutique
+        app.kubernetes.io/instance: {{name}}
+        kargo.akuity.io/stage: kargo-microservices:{{stage}}
+
+    spec:
+      project: default
+
+      source:
+        repoURL: https://github.com/dromadaire54/kargo-microservices
+        targetRevision: main
+        path: charts/online-boutique
+        helm:
+          releaseName: online-boutique
+          valuesFiles:
+          - ../../env/{{name}}/values.yaml
+
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: online-boutique-{{name}}
+
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+        - CreateNamespace=true
+        - RespectIgnoreDifferences=true
+        retry:
+          limit: 5
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+
+      # Kargo integration - authorize stage promotion
+      metadata:
+        annotations:
+          kargo.akuity.io/authorized-stage: kargo-microservices:{{stage}}
