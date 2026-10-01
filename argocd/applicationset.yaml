@@ -17,11 +17,11 @@ spec:
 
   template:
     metadata:
-      name: online-boutique-{{name}}
+      name: online-boutique-{{.name}}
       labels:
         app.kubernetes.io/name: online-boutique
-        app.kubernetes.io/instance: {{name}}
-        kargo.akuity.io/stage: kargo-microservices:{{stage}}
+        app.kubernetes.io/instance: {{.name}}
+        kargo.akuity.io/stage: kargo-microservices:{{.stage}}
 
     spec:
       project: default
@@ -33,11 +33,11 @@ spec:
         helm:
           releaseName: online-boutique
           valuesFiles:
-          - ../../env/{{name}}/values.yaml
+          - ../../env/{{.name}}/values.yaml
 
       destination:
         server: https://kubernetes.default.svc
-        namespace: online-boutique-{{name}}
+        namespace: online-boutique-{{.name}}
 
       syncPolicy:
         automated:
@@ -56,4 +56,4 @@ spec:
       # Kargo integration - authorize stage promotion
       metadata:
         annotations:
-          kargo.akuity.io/authorized-stage: kargo-microservices:{{stage}}
+          kargo.akuity.io/authorized-stage: kargo-microservices:{{.stage}}
