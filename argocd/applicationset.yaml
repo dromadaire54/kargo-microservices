@@ -21,7 +21,6 @@ spec:
       labels:
         app.kubernetes.io/name: online-boutique
         app.kubernetes.io/instance: "{{name}}"
-        kargo.akuity.io/stage: "kargo-microservices:{{stage}}"
       annotations:
         kargo.akuity.io/authorized-stage: "kargo-microservices:{{stage}}"
 
@@ -29,7 +28,7 @@ spec:
       project: default
 
       source:
-        repoURL: https://github.com/dromadaire54/kargo-microservices
+        repoURL: https://github.com/dromadaire54/kargo-microservices.git
         targetRevision: main
         path: charts/online-boutique
         helm:

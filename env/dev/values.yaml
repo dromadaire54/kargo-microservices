@@ -2,7 +2,7 @@
 # Tags below are written by Kargo (yaml-update step) on promotion.
 image:
   tags:
-    adservice: v0.10.1
+    adservice: v0.10.2
     cartservice: v0.10.2
     checkoutservice: v0.10.2
     currencyservice: v0.10.2
