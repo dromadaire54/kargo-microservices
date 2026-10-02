@@ -4,6 +4,8 @@ kind: Deployment
 metadata:
   name: {{ $s.name }}
   namespace: {{ .Release.Namespace }}
+  annotations:
+    test: "test"
   labels:
     {{- include "online-boutique.labels" . | nindent 4 }}
 spec:
@@ -18,8 +20,6 @@ spec:
       labels:
         {{- include "online-boutique.selectorLabels" . | nindent 8 }}
       {{- with $s.podAnnotations }}
-      annotations:
-        test: "test"
         {{- toYaml . | nindent 8 }}
       {{- end }}
     spec:
