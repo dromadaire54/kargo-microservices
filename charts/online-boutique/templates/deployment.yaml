@@ -6,6 +6,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "online-boutique.labels" . | nindent 4 }}
+    tata: toto
 spec:
   {{- with $s.replicas }}
   replicas: {{ . }}
