@@ -63,6 +63,58 @@ spec:
         config:
           path: ./src
 
+      - uses: argocd-update
+        config:
+          apps:
+          - name: online-boutique-adservice-dev
+            sources:
+            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+              desiredRevision: ${{ outputs.commit.commit }}
+          - name: online-boutique-cartservice-dev
+            sources:
+            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+              desiredRevision: ${{ outputs.commit.commit }}
+          - name: online-boutique-redis-cart-dev
+            sources:
+            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+              desiredRevision: ${{ outputs.commit.commit }}
+          - name: online-boutique-checkoutservice-dev
+            sources:
+            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+              desiredRevision: ${{ outputs.commit.commit }}
+          - name: online-boutique-currencyservice-dev
+            sources:
+            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+              desiredRevision: ${{ outputs.commit.commit }}
+          - name: online-boutique-emailservice-dev
+            sources:
+            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+              desiredRevision: ${{ outputs.commit.commit }}
+          - name: online-boutique-frontend-dev
+            sources:
+            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+              desiredRevision: ${{ outputs.commit.commit }}
+          - name: online-boutique-loadgenerator-dev
+            sources:
+            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+              desiredRevision: ${{ outputs.commit.commit }}
+          - name: online-boutique-paymentservice-dev
+            sources:
+            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+              desiredRevision: ${{ outputs.commit.commit }}
+          - name: online-boutique-productcatalogservice-dev
+            sources:
+            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+              desiredRevision: ${{ outputs.commit.commit }}
+          - name: online-boutique-recommendationservice-dev
+            sources:
+            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+              desiredRevision: ${{ outputs.commit.commit }}
+          - name: online-boutique-shippingservice-dev
+            sources:
+            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+              desiredRevision: ${{ outputs.commit.commit }}
+
 ---
 apiVersion: kargo.akuity.io/v1alpha1
 kind: Stage
@@ -129,3 +181,55 @@ spec:
       - uses: git-push
         config:
           path: ./src
+
+      - uses: argocd-update
+        config:
+          apps:
+          - name: online-boutique-adservice-prod
+            sources:
+            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+              desiredRevision: ${{ outputs.commit.commit }}
+          - name: online-boutique-cartservice-prod
+            sources:
+            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+              desiredRevision: ${{ outputs.commit.commit }}
+          - name: online-boutique-redis-cart-prod
+            sources:
+            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+              desiredRevision: ${{ outputs.commit.commit }}
+          - name: online-boutique-checkoutservice-prod
+            sources:
+            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+              desiredRevision: ${{ outputs.commit.commit }}
+          - name: online-boutique-currencyservice-prod
+            sources:
+            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+              desiredRevision: ${{ outputs.commit.commit }}
+          - name: online-boutique-emailservice-prod
+            sources:
+            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+              desiredRevision: ${{ outputs.commit.commit }}
+          - name: online-boutique-frontend-prod
+            sources:
+            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+              desiredRevision: ${{ outputs.commit.commit }}
+          - name: online-boutique-loadgenerator-prod
+            sources:
+            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+              desiredRevision: ${{ outputs.commit.commit }}
+          - name: online-boutique-paymentservice-prod
+            sources:
+            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+              desiredRevision: ${{ outputs.commit.commit }}
+          - name: online-boutique-productcatalogservice-prod
+            sources:
+            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+              desiredRevision: ${{ outputs.commit.commit }}
+          - name: online-boutique-recommendationservice-prod
+            sources:
+            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+              desiredRevision: ${{ outputs.commit.commit }}
+          - name: online-boutique-shippingservice-prod
+            sources:
+            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+              desiredRevision: ${{ outputs.commit.commit }}
