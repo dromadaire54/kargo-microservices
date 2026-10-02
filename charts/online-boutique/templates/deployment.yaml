@@ -4,8 +4,6 @@ kind: Deployment
 metadata:
   name: {{ $s.name }}
   namespace: {{ .Release.Namespace }}
-  annotations:
-    test: "test"
   labels:
     {{- include "online-boutique.labels" . | nindent 4 }}
 spec:
