@@ -177,9 +177,9 @@ services:
     service:
       portName: http
       port: 80
+    # No LoadBalancer: on k3d, port 80 is already taken by Traefik (use kubectl port-forward).
     externalService:
-      enabled: true
-      port: 80
+      enabled: false
     podAnnotations:
       sidecar.istio.io/rewriteAppHTTPProbers: "true"
     env:

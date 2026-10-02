@@ -11,7 +11,7 @@ spec:
       repoURL: https://github.com/dromadaire54/kargo-microservices.git
       branch: main
       includePaths:
-      - charts/online-boutique/
+      - glob:charts/online-boutique/**
   - image:
       repoURL: us-central1-docker.pkg.dev/google-samples/microservices-demo/adservice
   - image:
