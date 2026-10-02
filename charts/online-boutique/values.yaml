@@ -112,16 +112,20 @@ services:
         cpu: 200m
         memory: 64Mi
       limits:
-        cpu: 300m
+        cpu: 500m
         memory: 128Mi
+    # The default 1s probe timeout is too short when the CPU is throttled under load.
     probes:
       readiness:
         initialDelaySeconds: 15
+        timeoutSeconds: 5
         grpc:
           port: 7070
       liveness:
         initialDelaySeconds: 15
         periodSeconds: 10
+        timeoutSeconds: 5
+        failureThreshold: 5
         grpc:
           port: 7070
 
