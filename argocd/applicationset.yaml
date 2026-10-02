@@ -46,7 +46,8 @@ spec:
 
       source:
         repoURL: https://github.com/dromadaire54/kargo-microservices.git
-        targetRevision: main
+        # Branch rebuilt by the Kargo promotion of the stage.
+        targetRevision: stage/{{.stage}}
         path: charts/online-boutique
         helm:
           releaseName: "{{.service}}"

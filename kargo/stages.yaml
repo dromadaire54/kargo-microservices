@@ -17,18 +17,40 @@ spec:
       vars:
       - name: imageRepo
         value: us-central1-docker.pkg.dev/google-samples/microservices-demo
+      - name: repoURL
+        value: https://github.com/dromadaire54/kargo-microservices.git
+      - name: branch
+        value: stage/dev
       steps:
+      # ./src: the chart and env files at the Freight commit. ./out: the stage branch the
+      # Applications track, rebuilt from ./src on each promotion.
       - uses: git-clone
         config:
-          repoURL: https://github.com/dromadaire54/kargo-microservices.git
+          repoURL: ${{ vars.repoURL }}
           checkout:
-          - branch: main
+          - commit: ${{ commitFrom(vars.repoURL).ID }}
             path: ./src
+          - branch: ${{ vars.branch }}
+            create: true
+            path: ./out
+
+      - uses: git-clear
+        config:
+          path: ./out
+
+      - uses: copy
+        config:
+          inPath: ./src/charts
+          outPath: ./out/charts
+      - uses: copy
+        config:
+          inPath: ./src/env/dev
+          outPath: ./out/env/dev
 
       - uses: yaml-update
         as: update-image
         config:
-          path: ./src/env/dev/values.yaml
+          path: ./out/env/dev/values.yaml
           updates:
           - key: image.tags.adservice
             value: ${{ imageFrom(vars.imageRepo + "/adservice").Tag }}
@@ -56,63 +78,63 @@ spec:
       - uses: git-commit
         as: commit
         config:
-          path: ./src
+          path: ./out
           message: ${{ outputs['update-image'].commitMessage }}
 
       - uses: git-push
         config:
-          path: ./src
+          path: ./out
 
       - uses: argocd-update
         config:
           apps:
           - name: online-boutique-adservice-dev
             sources:
-            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+            - repoURL: ${{ vars.repoURL }}
               desiredRevision: ${{ outputs.commit.commit }}
           - name: online-boutique-cartservice-dev
             sources:
-            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+            - repoURL: ${{ vars.repoURL }}
               desiredRevision: ${{ outputs.commit.commit }}
           - name: online-boutique-redis-cart-dev
             sources:
-            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+            - repoURL: ${{ vars.repoURL }}
               desiredRevision: ${{ outputs.commit.commit }}
           - name: online-boutique-checkoutservice-dev
             sources:
-            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+            - repoURL: ${{ vars.repoURL }}
               desiredRevision: ${{ outputs.commit.commit }}
           - name: online-boutique-currencyservice-dev
             sources:
-            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+            - repoURL: ${{ vars.repoURL }}
               desiredRevision: ${{ outputs.commit.commit }}
           - name: online-boutique-emailservice-dev
             sources:
-            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+            - repoURL: ${{ vars.repoURL }}
               desiredRevision: ${{ outputs.commit.commit }}
           - name: online-boutique-frontend-dev
             sources:
-            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+            - repoURL: ${{ vars.repoURL }}
               desiredRevision: ${{ outputs.commit.commit }}
           - name: online-boutique-loadgenerator-dev
             sources:
-            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+            - repoURL: ${{ vars.repoURL }}
               desiredRevision: ${{ outputs.commit.commit }}
           - name: online-boutique-paymentservice-dev
             sources:
-            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+            - repoURL: ${{ vars.repoURL }}
               desiredRevision: ${{ outputs.commit.commit }}
           - name: online-boutique-productcatalogservice-dev
             sources:
-            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+            - repoURL: ${{ vars.repoURL }}
               desiredRevision: ${{ outputs.commit.commit }}
           - name: online-boutique-recommendationservice-dev
             sources:
-            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+            - repoURL: ${{ vars.repoURL }}
               desiredRevision: ${{ outputs.commit.commit }}
           - name: online-boutique-shippingservice-dev
             sources:
-            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+            - repoURL: ${{ vars.repoURL }}
               desiredRevision: ${{ outputs.commit.commit }}
 
 ---
@@ -136,18 +158,40 @@ spec:
       vars:
       - name: imageRepo
         value: us-central1-docker.pkg.dev/google-samples/microservices-demo
+      - name: repoURL
+        value: https://github.com/dromadaire54/kargo-microservices.git
+      - name: branch
+        value: stage/prod
       steps:
+      # ./src: the chart and env files at the Freight commit. ./out: the stage branch the
+      # Applications track, rebuilt from ./src on each promotion.
       - uses: git-clone
         config:
-          repoURL: https://github.com/dromadaire54/kargo-microservices.git
+          repoURL: ${{ vars.repoURL }}
           checkout:
-          - branch: main
+          - commit: ${{ commitFrom(vars.repoURL).ID }}
             path: ./src
+          - branch: ${{ vars.branch }}
+            create: true
+            path: ./out
+
+      - uses: git-clear
+        config:
+          path: ./out
+
+      - uses: copy
+        config:
+          inPath: ./src/charts
+          outPath: ./out/charts
+      - uses: copy
+        config:
+          inPath: ./src/env/prod
+          outPath: ./out/env/prod
 
       - uses: yaml-update
         as: update-image
         config:
-          path: ./src/env/prod/values.yaml
+          path: ./out/env/prod/values.yaml
           updates:
           - key: image.tags.adservice
             value: ${{ imageFrom(vars.imageRepo + "/adservice").Tag }}
@@ -175,61 +219,61 @@ spec:
       - uses: git-commit
         as: commit
         config:
-          path: ./src
+          path: ./out
           message: ${{ outputs['update-image'].commitMessage }}
 
       - uses: git-push
         config:
-          path: ./src
+          path: ./out
 
       - uses: argocd-update
         config:
           apps:
           - name: online-boutique-adservice-prod
             sources:
-            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+            - repoURL: ${{ vars.repoURL }}
               desiredRevision: ${{ outputs.commit.commit }}
           - name: online-boutique-cartservice-prod
             sources:
-            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+            - repoURL: ${{ vars.repoURL }}
               desiredRevision: ${{ outputs.commit.commit }}
           - name: online-boutique-redis-cart-prod
             sources:
-            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+            - repoURL: ${{ vars.repoURL }}
               desiredRevision: ${{ outputs.commit.commit }}
           - name: online-boutique-checkoutservice-prod
             sources:
-            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+            - repoURL: ${{ vars.repoURL }}
               desiredRevision: ${{ outputs.commit.commit }}
           - name: online-boutique-currencyservice-prod
             sources:
-            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+            - repoURL: ${{ vars.repoURL }}
               desiredRevision: ${{ outputs.commit.commit }}
           - name: online-boutique-emailservice-prod
             sources:
-            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+            - repoURL: ${{ vars.repoURL }}
               desiredRevision: ${{ outputs.commit.commit }}
           - name: online-boutique-frontend-prod
             sources:
-            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+            - repoURL: ${{ vars.repoURL }}
               desiredRevision: ${{ outputs.commit.commit }}
           - name: online-boutique-loadgenerator-prod
             sources:
-            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+            - repoURL: ${{ vars.repoURL }}
               desiredRevision: ${{ outputs.commit.commit }}
           - name: online-boutique-paymentservice-prod
             sources:
-            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+            - repoURL: ${{ vars.repoURL }}
               desiredRevision: ${{ outputs.commit.commit }}
           - name: online-boutique-productcatalogservice-prod
             sources:
-            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+            - repoURL: ${{ vars.repoURL }}
               desiredRevision: ${{ outputs.commit.commit }}
           - name: online-boutique-recommendationservice-prod
             sources:
-            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+            - repoURL: ${{ vars.repoURL }}
               desiredRevision: ${{ outputs.commit.commit }}
           - name: online-boutique-shippingservice-prod
             sources:
-            - repoURL: https://github.com/dromadaire54/kargo-microservices.git
+            - repoURL: ${{ vars.repoURL }}
               desiredRevision: ${{ outputs.commit.commit }}
