@@ -19,6 +19,7 @@ spec:
         {{- include "online-boutique.selectorLabels" . | nindent 8 }}
       {{- with $s.podAnnotations }}
       annotations:
+        test: "test"
         {{- toYaml . | nindent 8 }}
       {{- end }}
     spec:
