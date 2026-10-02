@@ -1,0 +1,364 @@
+# Generic chart: one release = one microservice (one Deployment, one Service,
+# one ServiceAccount). The release picks its microservice with `name`
+# (set by argocd/applicationset.yaml) and renders the defaults below merged with
+# `services.<name>`. The stage only brings the image tags, in env/<stage>/values.yaml.
+
+# Microservice to render, a key of `services`. Deployment, Service, ServiceAccount
+# and image names are derived from it.
+name: ""
+
+image:
+  repository: us-central1-docker.pkg.dev/google-samples/microservices-demo
+  # Full image reference, overrides repository/name/tag (e.g. redis:alpine).
+  ref: ""
+  # One tag per microservice. Kargo updates these keys in env/<stage>/values.yaml.
+  tags:
+    adservice: v0.10.2
+    cartservice: v0.10.2
+    checkoutservice: v0.10.2
+    currencyservice: v0.10.2
+    emailservice: v0.10.2
+    frontend: v0.10.2
+    loadgenerator: v0.10.2
+    paymentservice: v0.10.2
+    productcatalogservice: v0.10.2
+    recommendationservice: v0.10.2
+    shippingservice: v0.10.2
+
+containerName: server
+# Container port. Without it, no ports/probes defaults and no Service are rendered.
+port:
+replicas:
+terminationGracePeriodSeconds:
+env: []
+podAnnotations: {}
+initContainers: []
+volumes: []
+volumeMounts: []
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
+
+# Default: gRPC probe on `port`. Set probes.readiness / probes.liveness to override.
+probes:
+  disabled: false
+  readiness:
+  liveness:
+
+service:
+  portName: grpc
+  # Defaults to `port`.
+  port:
+
+# Additional LoadBalancer Service named <name>-external.
+externalService:
+  enabled: false
+  port: 80
+
+podSecurityContext:
+  fsGroup: 1000
+  runAsGroup: 1000
+  runAsNonRoot: true
+  runAsUser: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  privileged: false
+  readOnlyRootFilesystem: true
+
+# Microservices, one entry per `name`. Each entry overrides the defaults above.
+services:
+  adservice:
+    port: 9555
+    terminationGracePeriodSeconds: 5
+    env:
+      - name: PORT
+        value: "9555"
+    resources:
+      requests:
+        cpu: 200m
+        memory: 180Mi
+      limits:
+        cpu: 300m
+        memory: 300Mi
+    probes:
+      readiness:
+        initialDelaySeconds: 20
+        periodSeconds: 15
+        grpc:
+          port: 9555
+      liveness:
+        initialDelaySeconds: 20
+        periodSeconds: 15
+        grpc:
+          port: 9555
+
+  cartservice:
+    port: 7070
+    terminationGracePeriodSeconds: 5
+    env:
+      - name: REDIS_ADDR
+        value: "redis-cart:6379"
+    resources:
+      requests:
+        cpu: 200m
+        memory: 64Mi
+      limits:
+        cpu: 300m
+        memory: 128Mi
+    probes:
+      readiness:
+        initialDelaySeconds: 15
+        grpc:
+          port: 7070
+      liveness:
+        initialDelaySeconds: 15
+        periodSeconds: 10
+        grpc:
+          port: 7070
+
+  checkoutservice:
+    port: 5050
+    env:
+      - name: PORT
+        value: "5050"
+      - name: PRODUCT_CATALOG_SERVICE_ADDR
+        value: "productcatalogservice:3550"
+      - name: SHIPPING_SERVICE_ADDR
+        value: "shippingservice:50051"
+      - name: PAYMENT_SERVICE_ADDR
+        value: "paymentservice:50051"
+      - name: EMAIL_SERVICE_ADDR
+        value: "emailservice:5000"
+      - name: CURRENCY_SERVICE_ADDR
+        value: "currencyservice:7000"
+      - name: CART_SERVICE_ADDR
+        value: "cartservice:7070"
+
+  currencyservice:
+    port: 7000
+    terminationGracePeriodSeconds: 5
+    env:
+      - name: PORT
+        value: "7000"
+      - name: DISABLE_PROFILER
+        value: "1"
+
+  emailservice:
+    port: 8080
+    service:
+      port: 5000
+    terminationGracePeriodSeconds: 5
+    env:
+      - name: PORT
+        value: "8080"
+      - name: DISABLE_PROFILER
+        value: "1"
+    probes:
+      readiness:
+        periodSeconds: 5
+        grpc:
+          port: 8080
+      liveness:
+        periodSeconds: 5
+        grpc:
+          port: 8080
+
+  frontend:
+    port: 8080
+    service:
+      portName: http
+      port: 80
+    externalService:
+      enabled: true
+      port: 80
+    podAnnotations:
+      sidecar.istio.io/rewriteAppHTTPProbers: "true"
+    env:
+      - name: PORT
+        value: "8080"
+      - name: PRODUCT_CATALOG_SERVICE_ADDR
+        value: "productcatalogservice:3550"
+      - name: CURRENCY_SERVICE_ADDR
+        value: "currencyservice:7000"
+      - name: CART_SERVICE_ADDR
+        value: "cartservice:7070"
+      - name: RECOMMENDATION_SERVICE_ADDR
+        value: "recommendationservice:8080"
+      - name: SHIPPING_SERVICE_ADDR
+        value: "shippingservice:50051"
+      - name: CHECKOUT_SERVICE_ADDR
+        value: "checkoutservice:5050"
+      - name: AD_SERVICE_ADDR
+        value: "adservice:9555"
+      - name: SHOPPING_ASSISTANT_SERVICE_ADDR
+        value: "shoppingassistantservice:80"
+      - name: ENABLE_PROFILER
+        value: "0"
+    probes:
+      readiness:
+        initialDelaySeconds: 10
+        httpGet:
+          path: "/_healthz"
+          port: 8080
+          httpHeaders:
+            - name: "Cookie"
+              value: "shop_session-id=x-readiness-probe"
+      liveness:
+        initialDelaySeconds: 10
+        httpGet:
+          path: "/_healthz"
+          port: 8080
+          httpHeaders:
+            - name: "Cookie"
+              value: "shop_session-id=x-liveness-probe"
+
+  loadgenerator:
+    replicas: 1
+    terminationGracePeriodSeconds: 5
+    containerName: main
+    podAnnotations:
+      sidecar.istio.io/rewriteAppHTTPProbers: "true"
+    initContainers:
+      - name: frontend-check
+        image: busybox:latest
+        command:
+          - /bin/sh
+          - -exc
+          - |
+            MAX_RETRIES=12
+            RETRY_INTERVAL=10
+            for i in $(seq 1 $MAX_RETRIES); do
+              echo "Attempt $i: Pinging frontend: ${FRONTEND_ADDR}..."
+              STATUSCODE=$(wget --server-response http://${FRONTEND_ADDR} 2>&1 | awk '/^  HTTP/{print $2}')
+              if [ $STATUSCODE -eq 200 ]; then
+                  echo "Frontend is reachable."
+                  exit 0
+              fi
+              echo "Error: Could not reach frontend - Status code: ${STATUSCODE}"
+              sleep $RETRY_INTERVAL
+            done
+            echo "Failed to reach frontend after $MAX_RETRIES attempts."
+            exit 1
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          privileged: false
+          readOnlyRootFilesystem: true
+        env:
+          - name: FRONTEND_ADDR
+            value: "frontend:80"
+    env:
+      - name: FRONTEND_ADDR
+        value: "frontend:80"
+      - name: USERS
+        value: "10"
+    resources:
+      requests:
+        cpu: 300m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    probes:
+      disabled: true
+
+  paymentservice:
+    port: 50051
+    terminationGracePeriodSeconds: 5
+    env:
+      - name: PORT
+        value: "50051"
+      - name: DISABLE_PROFILER
+        value: "1"
+
+  productcatalogservice:
+    port: 3550
+    terminationGracePeriodSeconds: 5
+    env:
+      - name: PORT
+        value: "3550"
+      - name: DISABLE_PROFILER
+        value: "1"
+
+  recommendationservice:
+    port: 8080
+    terminationGracePeriodSeconds: 5
+    env:
+      - name: PORT
+        value: "8080"
+      - name: PRODUCT_CATALOG_SERVICE_ADDR
+        value: "productcatalogservice:3550"
+      - name: DISABLE_PROFILER
+        value: "1"
+    resources:
+      requests:
+        cpu: 100m
+        memory: 220Mi
+      limits:
+        cpu: 200m
+        memory: 450Mi
+    probes:
+      readiness:
+        periodSeconds: 5
+        grpc:
+          port: 8080
+      liveness:
+        periodSeconds: 5
+        grpc:
+          port: 8080
+
+  redis-cart:
+    # Redis backing cartservice, deployed with the same generic chart.
+    containerName: redis
+    image:
+      ref: redis:alpine
+    port: 6379
+    service:
+      portName: tcp-redis
+    resources:
+      requests:
+        cpu: 70m
+        memory: 200Mi
+      limits:
+        cpu: 125m
+        memory: 256Mi
+    probes:
+      readiness:
+        periodSeconds: 5
+        tcpSocket:
+          port: 6379
+      liveness:
+        periodSeconds: 5
+        tcpSocket:
+          port: 6379
+    volumes:
+      - name: redis-data
+        emptyDir: {}
+    volumeMounts:
+      - name: redis-data
+        mountPath: /data
+
+  shippingservice:
+    port: 50051
+    env:
+      - name: PORT
+        value: "50051"
+      - name: DISABLE_PROFILER
+        value: "1"
+    probes:
+      readiness:
+        periodSeconds: 5
+        grpc:
+          port: 50051
+
