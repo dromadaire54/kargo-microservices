@@ -64,6 +64,9 @@ spec:
         namespace: online-boutique-{{.stage}}
 
       syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
         syncOptions:
         - CreateNamespace=true
         - RespectIgnoreDifferences=true
