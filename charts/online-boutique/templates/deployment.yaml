@@ -1,0 +1,65 @@
+{{- $s := include "online-boutique.service" . | fromYaml }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $s.name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "online-boutique.labels" . | nindent 4 }}
+spec:
+  {{- with $s.replicas }}
+  replicas: {{ . }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "online-boutique.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "online-boutique.selectorLabels" . | nindent 8 }}
+      {{- with $s.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ $s.name }}
+      {{- with $s.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ . }}
+      {{- end }}
+      securityContext:
+        {{- toYaml $s.podSecurityContext | nindent 8 }}
+      {{- with $s.initContainers }}
+      initContainers:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: {{ $s.containerName }}
+        securityContext:
+          {{- toYaml $s.securityContext | nindent 10 }}
+        image: {{ include "online-boutique.image" $s }}
+        {{- if $s.port }}
+        ports:
+        - containerPort: {{ $s.port }}
+        {{- end }}
+        {{- with $s.env }}
+        env:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- if not $s.probes.disabled }}
+        {{- /* Default probe: gRPC on the container port. */}}
+        {{- $default := dict "grpc" (dict "port" $s.port) }}
+        readinessProbe:
+          {{- ($s.probes.readiness | default $default) | toYaml | nindent 10 }}
+        livenessProbe:
+          {{- ($s.probes.liveness | default $default) | toYaml | nindent 10 }}
+        {{- end }}
+        {{- with $s.volumeMounts }}
+        volumeMounts:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        resources:
+          {{- toYaml $s.resources | nindent 10 }}
+      {{- with $s.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

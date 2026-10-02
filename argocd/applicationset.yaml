@@ -4,23 +4,37 @@ metadata:
   name: online-boutique
   namespace: argocd
 spec:
-  # Generator for dev and prod environments
+  # One Application per microservice and per stage, all using charts/online-boutique.
+  # The microservice is described in charts/online-boutique/values.yaml (`services`), the stage by env/<stage>/values.yaml.
   generators:
-  - list:
-      elements:
-      - name: dev
-        namespace: online-boutique-dev
-        stage: dev
-      - name: prod
-        namespace: online-boutique-prod
-        stage: prod
+  - matrix:
+      generators:
+      - list:
+          elements:
+          - service: adservice
+          - service: cartservice
+          - service: redis-cart
+          - service: checkoutservice
+          - service: currencyservice
+          - service: emailservice
+          - service: frontend
+          - service: loadgenerator
+          - service: paymentservice
+          - service: productcatalogservice
+          - service: recommendationservice
+          - service: shippingservice
+      - list:
+          elements:
+          - stage: dev
+          - stage: prod
 
   template:
     metadata:
-      name: online-boutique-{{name}}
+      name: online-boutique-{{service}}-{{stage}}
       labels:
         app.kubernetes.io/name: online-boutique
-        app.kubernetes.io/instance: "{{name}}"
+        app.kubernetes.io/instance: "{{service}}"
+        stage: "{{stage}}"
       annotations:
         kargo.akuity.io/authorized-stage: "kargo-microservices:{{stage}}"
 
@@ -32,13 +46,18 @@ spec:
         targetRevision: main
         path: charts/online-boutique
         helm:
-          releaseName: online-boutique
+          releaseName: "{{service}}"
+          # Selects the microservice in the chart's `services` values.
+          parameters:
+            - name: name
+              value: "{{service}}"
+          # Stage values: image tags written by Kargo.
           valueFiles:
-            - ../../env/{{name}}/values.yaml
+            - ../../env/{{stage}}/values.yaml
 
       destination:
         server: https://kubernetes.default.svc
-        namespace: online-boutique-{{name}}
+        namespace: online-boutique-{{stage}}
 
       syncPolicy:
         automated:

@@ -4,15 +4,20 @@ metadata:
   name: kargo-microservices
   annotations:
     # This annotation ensures Projects (Namespaces) are created first when deployed via Argo CD
-    argocd.argoproj.io/sync-wave: "-1"
+    argocd.argoproj.io/sync-wave: "-5"
 ---
 apiVersion: kargo.akuity.io/v1alpha1
 kind: ProjectConfig
 metadata:
   name: kargo-microservices
   namespace: kargo-microservices
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
 spec:
   promotionPolicies:
   - stageSelector:
       name: dev
     autoPromotionEnabled: true
+  - stageSelector:
+      name: prod
+    autoPromotionEnabled: false
