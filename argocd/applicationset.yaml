@@ -4,6 +4,9 @@ metadata:
   name: online-boutique
   namespace: argocd
 spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+
   # One Application per microservice and per stage, all using charts/online-boutique.
   # The microservice is described in charts/online-boutique/values.yaml (`services`), the stage by env/<stage>/values.yaml.
   generators:
@@ -30,13 +33,13 @@ spec:
 
   template:
     metadata:
-      name: online-boutique-{{service}}-{{stage}}
+      name: online-boutique-{{.service}}-{{.stage}}
       labels:
         app.kubernetes.io/name: online-boutique
-        app.kubernetes.io/instance: "{{service}}"
-        stage: "{{stage}}"
+        app.kubernetes.io/instance: "{{.service}}"
+        stage: "{{.stage}}"
       annotations:
-        kargo.akuity.io/authorized-stage: "kargo-microservices:{{stage}}"
+        kargo.akuity.io/authorized-stage: "kargo-microservices:{{.stage}}"
 
     spec:
       project: default
@@ -46,23 +49,20 @@ spec:
         targetRevision: main
         path: charts/online-boutique
         helm:
-          releaseName: "{{service}}"
+          releaseName: "{{.service}}"
           # Selects the microservice in the chart's `services` values.
           parameters:
             - name: name
-              value: "{{service}}"
+              value: "{{.service}}"
           # Stage values: image tags written by Kargo.
           valueFiles:
-            - ../../env/{{stage}}/values.yaml
+            - ../../env/{{.stage}}/values.yaml
 
       destination:
         server: https://kubernetes.default.svc
-        namespace: online-boutique-{{stage}}
+        namespace: online-boutique-{{.stage}}
 
       syncPolicy:
-        automated:
-          prune: true
-          selfHeal: true
         syncOptions:
         - CreateNamespace=true
         - RespectIgnoreDifferences=true
@@ -72,3 +72,13 @@ spec:
             duration: 5s
             factor: 2
             maxDuration: 3m
+
+  # Auto-sync everywhere except prod: prod is only synced by a Kargo promotion (argocd-update).
+  templatePatch: |
+    {{- if ne .stage "prod" }}
+    spec:
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+    {{- end }}
