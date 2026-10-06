@@ -4,14 +4,8 @@ metadata:
   name: online-boutique
   namespace: kargo-microservices
 spec:
+  # Container images only; chart changes are tracked by online-boutique-helm.
   subscriptions:
-  # Chart changes: a new commit touching the chart creates a Freight. Kargo pushes to
-  # stage/<stage> branches, never to main, so it does not retrigger itself.
-  - git:
-      repoURL: https://github.com/dromadaire54/kargo-microservices.git
-      branch: main
-      includePaths:
-      - glob:charts/online-boutique/**
   - image:
       repoURL: us-central1-docker.pkg.dev/google-samples/microservices-demo/adservice
   - image:
@@ -36,3 +30,18 @@ spec:
       repoURL: us-central1-docker.pkg.dev/google-samples/microservices-demo/shippingservice
   - image:
       repoURL: us-central1-docker.pkg.dev/google-samples/microservices-demo/shoppingassistantservice
+---
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Warehouse
+metadata:
+  name: online-boutique-helm
+  namespace: kargo-microservices
+spec:
+  subscriptions:
+  # Chart changes: a new commit touching the chart creates a Freight. Kargo pushes to
+  # stage/<stage> branches, never to main, so it does not retrigger itself.
+  - git:
+      repoURL: https://github.com/dromadaire54/kargo-microservices.git
+      branch: main
+      includePaths:
+      - glob:charts/online-boutique/**

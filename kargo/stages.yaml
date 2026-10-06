@@ -6,10 +6,16 @@ metadata:
   annotations:
     kargo.akuity.io/color: green
 spec:
+  # Two origins: the container images and the Helm chart (git commit) are promoted independently.
   requestedFreight:
   - origin:
       kind: Warehouse
       name: online-boutique
+    sources:
+      direct: true
+  - origin:
+      kind: Warehouse
+      name: online-boutique-helm
     sources:
       direct: true
   promotionTemplate:
@@ -28,7 +34,7 @@ spec:
         config:
           repoURL: ${{ vars.repoURL }}
           checkout:
-          - commit: ${{ commitFrom(vars.repoURL).ID }}
+          - commit: ${{ commitFrom(vars.repoURL, warehouse("online-boutique-helm")).ID }}
             path: ./src
           - branch: ${{ vars.branch }}
             create: true
@@ -53,27 +59,27 @@ spec:
           path: ./out/env/dev/values.yaml
           updates:
           - key: image.tags.adservice
-            value: ${{ imageFrom(vars.imageRepo + "/adservice").Tag }}
+            value: ${{ imageFrom(vars.imageRepo + "/adservice", warehouse("online-boutique")).Tag }}
           - key: image.tags.cartservice
-            value: ${{ imageFrom(vars.imageRepo + "/cartservice").Tag }}
+            value: ${{ imageFrom(vars.imageRepo + "/cartservice", warehouse("online-boutique")).Tag }}
           - key: image.tags.checkoutservice
-            value: ${{ imageFrom(vars.imageRepo + "/checkoutservice").Tag }}
+            value: ${{ imageFrom(vars.imageRepo + "/checkoutservice", warehouse("online-boutique")).Tag }}
           - key: image.tags.currencyservice
-            value: ${{ imageFrom(vars.imageRepo + "/currencyservice").Tag }}
+            value: ${{ imageFrom(vars.imageRepo + "/currencyservice", warehouse("online-boutique")).Tag }}
           - key: image.tags.emailservice
-            value: ${{ imageFrom(vars.imageRepo + "/emailservice").Tag }}
+            value: ${{ imageFrom(vars.imageRepo + "/emailservice", warehouse("online-boutique")).Tag }}
           - key: image.tags.frontend
-            value: ${{ imageFrom(vars.imageRepo + "/frontend").Tag }}
+            value: ${{ imageFrom(vars.imageRepo + "/frontend", warehouse("online-boutique")).Tag }}
           - key: image.tags.loadgenerator
-            value: ${{ imageFrom(vars.imageRepo + "/loadgenerator").Tag }}
+            value: ${{ imageFrom(vars.imageRepo + "/loadgenerator", warehouse("online-boutique")).Tag }}
           - key: image.tags.paymentservice
-            value: ${{ imageFrom(vars.imageRepo + "/paymentservice").Tag }}
+            value: ${{ imageFrom(vars.imageRepo + "/paymentservice", warehouse("online-boutique")).Tag }}
           - key: image.tags.productcatalogservice
-            value: ${{ imageFrom(vars.imageRepo + "/productcatalogservice").Tag }}
+            value: ${{ imageFrom(vars.imageRepo + "/productcatalogservice", warehouse("online-boutique")).Tag }}
           - key: image.tags.recommendationservice
-            value: ${{ imageFrom(vars.imageRepo + "/recommendationservice").Tag }}
+            value: ${{ imageFrom(vars.imageRepo + "/recommendationservice", warehouse("online-boutique")).Tag }}
           - key: image.tags.shippingservice
-            value: ${{ imageFrom(vars.imageRepo + "/shippingservice").Tag }}
+            value: ${{ imageFrom(vars.imageRepo + "/shippingservice", warehouse("online-boutique")).Tag }}
 
       - uses: git-commit
         as: commit
@@ -146,10 +152,17 @@ metadata:
   annotations:
     kargo.akuity.io/color: red
 spec:
+  # Two origins: the container images and the Helm chart (git commit) are promoted independently.
   requestedFreight:
   - origin:
       kind: Warehouse
       name: online-boutique
+    sources:
+      stages:
+      - dev
+  - origin:
+      kind: Warehouse
+      name: online-boutique-helm
     sources:
       stages:
       - dev
@@ -169,7 +182,7 @@ spec:
         config:
           repoURL: ${{ vars.repoURL }}
           checkout:
-          - commit: ${{ commitFrom(vars.repoURL).ID }}
+          - commit: ${{ commitFrom(vars.repoURL, warehouse("online-boutique-helm")).ID }}
             path: ./src
           - branch: ${{ vars.branch }}
             create: true
@@ -194,27 +207,27 @@ spec:
           path: ./out/env/prod/values.yaml
           updates:
           - key: image.tags.adservice
-            value: ${{ imageFrom(vars.imageRepo + "/adservice").Tag }}
+            value: ${{ imageFrom(vars.imageRepo + "/adservice", warehouse("online-boutique")).Tag }}
           - key: image.tags.cartservice
-            value: ${{ imageFrom(vars.imageRepo + "/cartservice").Tag }}
+            value: ${{ imageFrom(vars.imageRepo + "/cartservice", warehouse("online-boutique")).Tag }}
           - key: image.tags.checkoutservice
-            value: ${{ imageFrom(vars.imageRepo + "/checkoutservice").Tag }}
+            value: ${{ imageFrom(vars.imageRepo + "/checkoutservice", warehouse("online-boutique")).Tag }}
           - key: image.tags.currencyservice
-            value: ${{ imageFrom(vars.imageRepo + "/currencyservice").Tag }}
+            value: ${{ imageFrom(vars.imageRepo + "/currencyservice", warehouse("online-boutique")).Tag }}
           - key: image.tags.emailservice
-            value: ${{ imageFrom(vars.imageRepo + "/emailservice").Tag }}
+            value: ${{ imageFrom(vars.imageRepo + "/emailservice", warehouse("online-boutique")).Tag }}
           - key: image.tags.frontend
-            value: ${{ imageFrom(vars.imageRepo + "/frontend").Tag }}
+            value: ${{ imageFrom(vars.imageRepo + "/frontend", warehouse("online-boutique")).Tag }}
           - key: image.tags.loadgenerator
-            value: ${{ imageFrom(vars.imageRepo + "/loadgenerator").Tag }}
+            value: ${{ imageFrom(vars.imageRepo + "/loadgenerator", warehouse("online-boutique")).Tag }}
           - key: image.tags.paymentservice
-            value: ${{ imageFrom(vars.imageRepo + "/paymentservice").Tag }}
+            value: ${{ imageFrom(vars.imageRepo + "/paymentservice", warehouse("online-boutique")).Tag }}
           - key: image.tags.productcatalogservice
-            value: ${{ imageFrom(vars.imageRepo + "/productcatalogservice").Tag }}
+            value: ${{ imageFrom(vars.imageRepo + "/productcatalogservice", warehouse("online-boutique")).Tag }}
           - key: image.tags.recommendationservice
-            value: ${{ imageFrom(vars.imageRepo + "/recommendationservice").Tag }}
+            value: ${{ imageFrom(vars.imageRepo + "/recommendationservice", warehouse("online-boutique")).Tag }}
           - key: image.tags.shippingservice
-            value: ${{ imageFrom(vars.imageRepo + "/shippingservice").Tag }}
+            value: ${{ imageFrom(vars.imageRepo + "/shippingservice", warehouse("online-boutique")).Tag }}
 
       - uses: git-commit
         as: commit
