@@ -4,6 +4,7 @@ metadata:
   name: online-boutique
   namespace: kargo-microservices
 spec:
+  interval: 1m0s
   # Container images only; chart changes are tracked by online-boutique-helm.
   subscriptions:
   - image:
@@ -37,6 +38,7 @@ metadata:
   name: online-boutique-helm
   namespace: kargo-microservices
 spec:
+  interval: 1m0s
   subscriptions:
   # Chart changes: a new commit touching the chart creates a Freight. Kargo pushes to
   # stage/<stage> branches, never to main, so it does not retrigger itself.
