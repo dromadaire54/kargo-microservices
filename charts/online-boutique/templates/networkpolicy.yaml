@@ -1,0 +1,108 @@
+{{- /*
+L3/L4 NetworkPolicy of the microservice selected by `name`.
+
+Listing both Ingress and Egress in policyTypes makes the pod default-deny in both
+directions: only the rules below are allowed, everything else is dropped by the
+CNI (kube-router on k3s).
+
+Rules are generated from the call graph in values.yaml:
+  - egress  = the `dependencies` of this service
+  - ingress = the services listing this one in their `dependencies`
+              (computed by the "online-boutique.clients" helper)
+
+Ports are always the *container* ports (`services.<dep>.port`), not the Service
+ports: NetworkPolicy is evaluated after kube-proxy DNAT, e.g. emailservice is
+called on Service port 5000 but the policy must allow 8080.
+
+With Istio, the sidecar captures traffic inside the pod network namespace, so
+the policy still sees the original destination port of the application.
+*/}}
+{{- $s := include "online-boutique.service" . | fromYaml }}
+{{- if $s.networkPolicy.enabled }}
+{{- $clients := include "online-boutique.clients" . | fromYamlArray }}
+# L3/L4: the pod only accepts its clients on its container port and only reaches
+# DNS, istiod and its dependencies on their container ports. Anything else is denied.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $s.name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "online-boutique.labels" . | nindent 4 }}
+spec:
+  # Applies to the pods of this microservice only (app: <name>).
+  podSelector:
+    matchLabels:
+      {{- include "online-boutique.selectorLabels" . | nindent 6 }}
+  policyTypes:
+  - Ingress
+  - Egress
+  {{- /*
+  Ingress is opened only when the service listens on a port and has at least
+  one client (or an extra peer such as the Istio ingress gateway). Otherwise
+  `ingress: []` denies all incoming traffic (e.g. loadgenerator).
+  */}}
+  {{- if and $s.port (or $clients $s.networkPolicy.extraIngressFrom) }}
+  ingress:
+  - from:
+    {{- /* One peer per client microservice, in the same namespace. */}}
+    {{- range $clients }}
+    - podSelector:
+        matchLabels:
+          app: {{ . }}
+    {{- end }}
+    {{- /* Extra peers from values (networkPolicy.extraIngressFrom), used as-is. */}}
+    {{- with $s.networkPolicy.extraIngressFrom }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    ports:
+    - protocol: TCP
+      port: {{ $s.port }}
+  {{- else }}
+  ingress: []
+  {{- end }}
+  egress:
+  # DNS (CoreDNS): needed to resolve the Service names of the dependencies.
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  # Istio sidecar: xDS configuration and mTLS certificates (SDS) from istiod.
+  # Without it the sidecar never becomes ready and the pod stays NotReady.
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: {{ $s.mesh.istiodNamespace }}
+      podSelector:
+        matchLabels:
+          app: istiod
+    ports:
+    - protocol: TCP
+      port: 15012
+  {{- /*
+  One rule per dependency, on the dependency's container port. Fails the
+  rendering if a dependency is unknown or has no port, to catch typos in values.
+  */}}
+  {{- range $s.dependencies }}
+  {{- $dep := index $.Values.services . | default dict }}
+  {{- if not $dep.port }}
+  {{- fail (printf "values: dependency %q of %q has no port" . $s.name) }}
+  {{- end }}
+  # -> {{ . }}
+  - to:
+    - podSelector:
+        matchLabels:
+          app: {{ . }}
+    ports:
+    - protocol: TCP
+      port: {{ $dep.port }}
+  {{- end }}
+{{- end }}

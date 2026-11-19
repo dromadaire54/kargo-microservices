@@ -74,6 +74,29 @@ securityContext:
   privileged: false
   readOnlyRootFilesystem: true
 
+# Microservices this one calls (keys of `services`). Single source of truth for
+# the call graph: egress rules are rendered from it, and ingress rules / allowed
+# mTLS identities are derived by inverting it (who lists me as a dependency).
+dependencies: []
+
+# L3/L4 NetworkPolicy: default deny in both directions for the pod, then allow
+# DNS, istiod, egress to `dependencies` and ingress from the services depending on it.
+networkPolicy:
+  enabled: true
+  # Extra peers (NetworkPolicyPeer) allowed to reach the container port.
+  extraIngressFrom: []
+
+# Istio (requires the istio-injection=enabled namespace label).
+mesh:
+  # PeerAuthentication mode of the workload: STRICT = mTLS only.
+  mtls: STRICT
+  # AuthorizationPolicy allowing only the mTLS identities (ServiceAccounts) of the
+  # services depending on this one, on its container port.
+  authorizationPolicy: true
+  # Extra SPIFFE principals allowed, e.g. cluster.local/ns/istio-system/sa/istio-ingressgateway.
+  extraPrincipals: []
+  istiodNamespace: istio-system
+
 # Microservices, one entry per `name`. Each entry overrides the defaults above.
 services:
   adservice:
@@ -103,6 +126,9 @@ services:
 
   cartservice:
     port: 7070
+    # Cart storage (REDIS_ADDR).
+    dependencies:
+      - redis-cart
     terminationGracePeriodSeconds: 5
     env:
       - name: REDIS_ADDR
@@ -131,6 +157,14 @@ services:
 
   checkoutservice:
     port: 5050
+    # Calls made while placing an order (see the *_SERVICE_ADDR env below).
+    dependencies:
+      - productcatalogservice
+      - shippingservice
+      - paymentservice
+      - emailservice
+      - currencyservice
+      - cartservice
     env:
       - name: PORT
         value: "5050"
@@ -184,6 +218,31 @@ services:
     # No LoadBalancer: on k3d, port 80 is already taken by Traefik (use kubectl port-forward).
     externalService:
       enabled: false
+    # Backends called by the web UI (see the *_SERVICE_ADDR env below).
+    # shoppingassistantservice is not deployed, so it is not listed.
+    dependencies:
+      - productcatalogservice
+      - currencyservice
+      - cartservice
+      - recommendationservice
+      - shippingservice
+      - checkoutservice
+      - adservice
+    # Reached from outside the mesh through the Istio ingress gateway
+    # (charts/istio, pods labelled istio=ingressgateway in istio-system):
+    # allowed at L3/L4 here, and by mTLS identity in mesh.extraPrincipals.
+    networkPolicy:
+      extraIngressFrom:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: istio-system
+          podSelector:
+            matchLabels:
+              istio: ingressgateway
+    mesh:
+      # ServiceAccount of the gateway deployed by charts/istio.
+      extraPrincipals:
+        - cluster.local/ns/istio-system/sa/istio-ingressgateway
     podAnnotations:
       sidecar.istio.io/rewriteAppHTTPProbers: "true"
     env:
@@ -229,6 +288,11 @@ services:
     replicas: 1
     terminationGracePeriodSeconds: 5
     containerName: main
+    # Generates traffic on the frontend only. Being a pure client (no port), it
+    # gets no Service, no PeerAuthentication/AuthorizationPolicy and an ingress-deny
+    # NetworkPolicy.
+    dependencies:
+      - frontend
     podAnnotations:
       sidecar.istio.io/rewriteAppHTTPProbers: "true"
     initContainers:
@@ -297,6 +361,9 @@ services:
 
   recommendationservice:
     port: 8080
+    # Reads the catalog to recommend products (PRODUCT_CATALOG_SERVICE_ADDR).
+    dependencies:
+      - productcatalogservice
     terminationGracePeriodSeconds: 5
     env:
       - name: PORT

@@ -1,0 +1,18 @@
+apiVersion: v2
+name: istio
+description: Istio (sidecar mode) for a local k3d cluster - base CRDs, istiod control plane and an ingress gateway
+type: application
+version: 0.1.0
+appVersion: "1.30.8"
+dependencies:
+  - name: base
+    version: 1.30.8
+    repository: https://istio-release.storage.googleapis.com/charts
+  - name: istiod
+    version: 1.30.8
+    repository: https://istio-release.storage.googleapis.com/charts
+  - name: gateway
+    alias: ingressgateway
+    version: 1.30.8
+    repository: https://istio-release.storage.googleapis.com/charts
+    condition: ingressgateway.enabled
