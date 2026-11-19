@@ -67,6 +67,10 @@ spec:
         automated:
           prune: true
           selfHeal: true
+        # Istio sidecar injection, required for mTLS / AuthorizationPolicy.
+        managedNamespaceMetadata:
+          labels:
+            istio-injection: enabled
         syncOptions:
         - CreateNamespace=true
         - RespectIgnoreDifferences=true

@@ -1,0 +1,79 @@
+{{- /*
+Istio security of the microservice selected by `name`, on top of the L3/L4
+NetworkPolicy (defense in depth):
+
+  - PeerAuthentication: transport security. In STRICT mode the sidecar refuses
+    any plaintext connection, so all traffic between workloads is mTLS.
+  - AuthorizationPolicy: identity-based authorization. The mTLS certificate
+    carries the caller's ServiceAccount (SPIFFE id
+    cluster.local/ns/<namespace>/sa/<serviceaccount>); only the clients derived
+    from the call graph (`dependencies` in values.yaml) are allowed.
+
+Rendered only for services listening on a port: a pure client such as
+loadgenerator has nothing to protect on the inbound side, and still uses mTLS
+outbound thanks to Istio auto mTLS.
+
+Both resources require the Istio CRDs (charts/istio) and an injected sidecar
+(istio-injection=enabled namespace label), otherwise they have no effect.
+*/}}
+{{- $s := include "online-boutique.service" . | fromYaml }}
+{{- if $s.port }}
+{{- if $s.mesh.mtls }}
+# mTLS between sidecars: STRICT refuses any plaintext connection to the workload.
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: {{ $s.name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "online-boutique.labels" . | nindent 4 }}
+spec:
+  # Scoped to this workload so that each release owns its own policy
+  # (no namespace-wide resource shared between the 12 releases).
+  selector:
+    matchLabels:
+      {{- include "online-boutique.selectorLabels" . | nindent 6 }}
+  mtls:
+    mode: {{ $s.mesh.mtls }}
+{{- end }}
+{{- if $s.mesh.authorizationPolicy }}
+{{- /*
+Allowed principals: the ServiceAccount of each client microservice (the
+ServiceAccount is named after the microservice, see serviceaccount.yaml),
+plus the extra principals from values (e.g. the Istio ingress gateway).
+*/}}
+{{- $clients := include "online-boutique.clients" . | fromYamlArray }}
+{{- $principals := list }}
+{{- range $clients }}
+{{- $principals = append $principals (printf "cluster.local/ns/%s/sa/%s" $.Release.Namespace .) }}
+{{- end }}
+{{- $principals = concat $principals ($s.mesh.extraPrincipals | default list) }}
+---
+# Identity-based authorization on top of mTLS: only the clients' ServiceAccounts
+# may connect, on the container port. No principal = ALLOW without rules = deny all.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: {{ $s.name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "online-boutique.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "online-boutique.selectorLabels" . | nindent 6 }}
+  action: ALLOW
+  {{- if $principals }}
+  rules:
+  - from:
+    - source:
+        principals:
+          {{- toYaml $principals | nindent 10 }}
+    # Container port (the sidecar sees the port after DNAT, like NetworkPolicy).
+    to:
+    - operation:
+        ports:
+        - {{ $s.port | quote }}
+  {{- end }}
+{{- end }}
+{{- end }}

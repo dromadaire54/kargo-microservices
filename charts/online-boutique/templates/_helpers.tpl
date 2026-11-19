@@ -13,6 +13,20 @@ use it with `include ... | fromYaml`.
 {{- mergeOverwrite $defaults ($override | deepCopy) | toYaml -}}
 {{- end }}
 
+{{/*
+Clients of the selected microservice: the `services` listing it in their
+`dependencies`. Returned as a YAML list, use it with `include ... | fromYamlArray`.
+*/}}
+{{- define "online-boutique.clients" -}}
+{{- $clients := list -}}
+{{- range $name, $svc := .Values.services -}}
+{{- if has $.Values.name ($svc.dependencies | default list) -}}
+{{- $clients = append $clients $name -}}
+{{- end -}}
+{{- end -}}
+{{- $clients | toYaml -}}
+{{- end }}
+
 {{/* Selector labels, kept as `app: <name>` to match the historical selectors. */}}
 {{- define "online-boutique.selectorLabels" -}}
 app: {{ .Values.name }}
