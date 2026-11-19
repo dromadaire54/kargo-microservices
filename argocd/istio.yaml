@@ -1,0 +1,48 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: istio
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/dromadaire54/kargo-microservices.git
+    targetRevision: main
+    # Umbrella chart: istio/base + istio/istiod + istio/gateway (dependencies rebuilt by Argo CD from Chart.lock).
+    path: charts/istio
+    helm:
+      releaseName: istio
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: istio-system
+
+  # istiod patches its webhooks at runtime (CA bundle, failurePolicy once ready):
+  # ignore those fields so the Application does not stay OutOfSync.
+  ignoreDifferences:
+  - group: admissionregistration.k8s.io
+    kind: ValidatingWebhookConfiguration
+    jqPathExpressions:
+    - .webhooks[]?.clientConfig.caBundle
+    - .webhooks[]?.failurePolicy
+  - group: admissionregistration.k8s.io
+    kind: MutatingWebhookConfiguration
+    jqPathExpressions:
+    - .webhooks[]?.clientConfig.caBundle
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+    # Istio CRDs are too large for the client-side last-applied annotation.
+    - ServerSideApply=true
+    - RespectIgnoreDifferences=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m

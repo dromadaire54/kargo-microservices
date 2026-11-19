@@ -1,0 +1,52 @@
+# Istio for k3d. Install into the istio-system namespace:
+#   helm dependency build charts/istio
+#   helm install istio charts/istio -n istio-system --create-namespace
+
+# Istio CRDs and cluster-wide resources.
+base:
+  defaultRevision: default
+
+# Control plane.
+istiod:
+  # Sized for a local k3d cluster.
+  pilot:
+    autoscaleEnabled: false
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+  global:
+    proxy:
+      resources:
+        requests:
+          cpu: 10m
+          memory: 64Mi
+        limits:
+          cpu: 500m
+          memory: 256Mi
+  meshConfig:
+    accessLogFile: /dev/stdout
+
+# Ingress gateway (istio/gateway chart). Exposed through k3s ServiceLB (klipper),
+# so ports 80/443 must be free: create the cluster with Traefik disabled, e.g.
+#   k3d cluster create demo -p "80:80@loadbalancer" -p "443:443@loadbalancer" \
+#     --k3s-arg "--disable=traefik@server:0"
+ingressgateway:
+  enabled: false
+  name: istio-ingressgateway
+  labels:
+    app: istio-ingressgateway
+    istio: ingressgateway
+  autoscaling:
+    enabled: false
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 1000m
+      memory: 512Mi
+  service:
+    type: LoadBalancer
